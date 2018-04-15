@@ -50,7 +50,9 @@ public:
 
       if (this->widths.size() == limit) {
         int m = this->get_median(limit);
-        std::cout << "Paquete listo: " << limit << " " << btype<< " " << " mediana: " << m << '\n';
+        //Paquete listo: 100 tornillos de tipo Cabeza plana (mediana: 27)
+        std::cout << "Paquete listo: " << limit << " tornillos de tipo "
+                  << btype << " (mediana: " << m << ")\n";
         ++packages;
         this->widths.clear();
       }
@@ -75,6 +77,7 @@ public:
   void connect_to_classificators(const int total, const char *file_classif[]);
   void start();
   void make_packages();
+  void get_remainder();
 };
 
 #endif

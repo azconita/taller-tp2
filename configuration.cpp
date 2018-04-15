@@ -18,8 +18,24 @@ ScrewConfiguration::~ScrewConfiguration() {
   this->screw_types.clear();
 }
 
+std::vector<int> ScrewConfiguration::get_types() {
+  std::vector<int> v;
+  for(std::map<int,std::pair<std::string,int>>::iterator it = this->screw_types.begin(); it != this->screw_types.end(); ++it) 
+    v.push_back(it->first);
+  return v;
+}
+
 std::string ScrewConfiguration::get_type(int ntype) {
   return std::get<0>(this->screw_types.find(ntype)->second);
+}
+
+bool ScrewConfiguration::has_type(int ntype) {
+  std::map<int,std::pair<std::string,int>>::iterator it = this->screw_types.find(ntype);
+  if (it != this->screw_types.end()) {
+    return true;
+  } else {
+    return false;
+  }
 }
 
 int ScrewConfiguration::get_limit(int ntype) {

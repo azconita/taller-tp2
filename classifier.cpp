@@ -1,9 +1,13 @@
-#include "classifier.hpp"
+#include "packager.h"
 
 
-ScrewClassifier::ScrewClassifier(const char* filename) :
-                  infile(filename, std::ios::in | std::ios::binary) {
+ScrewClassifier::ScrewClassifier(const char* filename,
+                                 std::queue<ScrewBlock> *classified) :
+                  infile(filename, std::ios::in | std::ios::binary),classified(classified){
+  //*infile = std::ifstream(filename, std::ios::in | std::ios::binary);
+
 }
+
 
 void ScrewClassifier::print_content() {
   std::string strBuf;
@@ -17,19 +21,11 @@ void ScrewClassifier::classify() {
   while (this->infile.peek() != EOF) {
     //TODO: ver que no haya error en read
     this->infile.read((char *) buf, 4);
-/*    std::cout << std::hex << (int) buf [0];
-    std::cout << std::hex << (int) buf [1];
-    std::cout << std::hex << (int) buf [2];
-    std::cout << std::hex << (int) buf [3] << std::endl;*/
     ScrewBlock block(buf);
-    this->classified.push(block);
+    this->classified->push(block);
   }
 }
 
 ScrewClassifier::~ScrewClassifier() {
-  //TODO: hace falta sacar todos los elementos de la lista?
-  while (!this->classified.empty()) {
-    this->classified.pop();
-  }
   this->infile.close();
 }

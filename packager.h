@@ -15,7 +15,6 @@
 #include <algorithm>
 #include "configuration.h"
 #include "screwblock.h"
-#include "printers.h"
 
 class ScrewsQueue {
 private:
@@ -80,14 +79,12 @@ class Thread {
 
 class ScrewClassifier : public Thread {
  private:
-  ErrPrinter *perr;
-  OutPrinter *pout;
   std::ifstream infile;
   std::string name;
   ScrewsQueue *classified;
   bool finished = false;
  public:
-  ScrewClassifier (const char* filename, ScrewsQueue *classified, ErrPrinter *pe, OutPrinter *po);
+  ScrewClassifier (const char* filename, ScrewsQueue *classified);
   ScrewClassifier(ScrewClassifier &&other) : infile(std::move(other.infile)), name(other.name), classified(other.classified) {}
   void run();
   ~ScrewClassifier();
@@ -100,10 +97,8 @@ class ScrewsUnpackaged {
   std::vector<int> widths;
   int limit = 0;
   int type;
-  ErrPrinter *perr;
-  OutPrinter *pout;
  public:
-  ScrewsUnpackaged (int type, int limit, ErrPrinter *pe, OutPrinter *po) : type(type), limit(limit), perr(pe), pout(po) {}
+  ScrewsUnpackaged (int type, int limit) : type(type), limit(limit) {}
   virtual ~ScrewsUnpackaged () {
     this->widths.clear();
   }
@@ -114,10 +109,18 @@ class ScrewsUnpackaged {
     return this->widths.size();
   }
   int make_package(int quantity, int width, int limit, std::string btype) {
-    int left = quantity;
-    int packages = 0;
-    for (size_t i = 0; i < quantity; i++) {
-      this->widths.push_back(width);
+    this->widths.push_back(width);
+    if (this->widths.size() == limit) {
+      int m = this->get_median(limit);
+      this->widths.clear();
+      return m;
+    }
+    return -1;
+
+    //int left = quantity;
+    //int packages = 0;
+    //for (size_t i = 0; i < quantity; i++) {
+    /*  this->widths.push_back(width);
       if (this->widths.size() == limit) {
         int m = this->get_median(limit);
         //std::mutex mscreen.lock();
@@ -126,11 +129,11 @@ class ScrewsUnpackaged {
                   << btype << " (mediana: " << m << ")\n";
         this->pout->print(&s);
         //mscreen.unlock();
-        ++packages;
+        //++packages;
         this->widths.clear();
       }
-    }
-    return packages;
+    //}
+    //return packages;*/
   }
   int get_median(int limit) {
     std::sort(this->widths.begin(),this->widths.end());
@@ -143,15 +146,13 @@ class ScrewsUnpackaged {
 
 class ScrewPackager {
  private:
-  ErrPrinter *perr;
-  OutPrinter *pout;
   ScrewConfiguration config;
   ScrewsQueue classified;
   std::vector<ScrewClassifier> classificators;
   int total = 0;
   std::map<int, ScrewsUnpackaged> screws_unpackaged;
  public:
-  ScrewPackager (const char * cfg_file) ;
+  ScrewPackager (const char * cfg_file) : config(cfg_file){};
   virtual ~ScrewPackager ();
   void connect_to_classificators(const int total, const char *file_classif[]);
   void start();

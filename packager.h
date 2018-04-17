@@ -21,32 +21,29 @@ class ScrewsQueue {
 private:
   std::queue<ScrewBlock> q;
   std::mutex m;
-  size_t size = 100;
-  std::condition_variable cv_full;
-  std::condition_variable cv_empty;
+  std::condition_variable cv;
 
 public:
   ScrewsQueue() {}
   virtual ~ScrewsQueue() {}
   ScrewBlock pop() {
-    std::unique_lock<std::mutex> l(m);
-    while (q.empty())
-      cv_empty.wait(l);
+    std::unique_lock<std::mutex> l(this->m);
+    while (this->q.empty())
+      this->cv.wait(l);
     ScrewBlock b = this->q.front();
     this->q.pop();
-    cv_full.notify_all();
     return b;
   }
   void push(ScrewBlock const block) {
-    std::unique_lock<std::mutex> l(m);
-    if (q.empty())
-      cv_empty.notify_all();
-    while (this->q.size() >= this->size)
-      cv_full.wait(l);
+    std::unique_lock<std::mutex> l(this->m);
+    bool empty = this->q.empty();
     this->q.push(block);
+    l.unlock();
+    if (empty)
+      this->cv.notify_all();
   }
   bool empty() {
-    std::unique_lock<std::mutex> l(m);
+    std::unique_lock<std::mutex> l(this->m);
     return this->q.empty();
   }
 };
@@ -87,7 +84,7 @@ class ScrewClassifier : public Thread {
   ScrewClassifier(const char* filename, ScrewsQueue *classified);
   ScrewClassifier(ScrewClassifier &&other) : infile(std::move(other.infile)),
     name(other.name), classified(other.classified), finished(other.finished) {}
-  void run();
+  virtual void run() override;
   ~ScrewClassifier();
   bool is_finished();
 };

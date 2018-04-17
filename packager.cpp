@@ -59,6 +59,9 @@ void ScrewPackager::start() {
     this->classificators[i].start();
   }
   this->make_packages();
+  for (size_t i = 0; i < this->classificators.size(); i++) {
+    this->classificators[i].join();
+  }
   this->get_remainder();
 }
 
@@ -73,19 +76,19 @@ void ScrewPackager::make_packages() {
                   this->config.get_limit(block.type)));
       it = this->screws_unpackaged.find(block.type);
     }
-      if (this->config.has_type(block.type)) {
-        for (int j = 0; j < block.quantity; j++) {
-          int m = it->second.make_package(block.quantity, block.width,
-                          this->config.get_limit(block.type),
-                          this->config.get_type(block.type));
-          if (m > 0)
-            std::cout << "Paquete listo: " << this->config.get_limit(block.type)
-                  << " tornillos de tipo " << this->config.get_type(block.type)
-                  << " (mediana: " << m << ")\n";
-        }
-      } else {
-        std::cerr << "Tipo de tornillo invalido: " << block.type << '\n';
+    if (this->config.has_type(block.type)) {
+      for (int j = 0; j < block.quantity; j++) {
+        int m = it->second.make_package(block.quantity, block.width,
+                        this->config.get_limit(block.type),
+                        this->config.get_type(block.type));
+        if (m > 0)
+          std::cout << "Paquete listo: " << this->config.get_limit(block.type)
+                << " tornillos de tipo " << this->config.get_type(block.type)
+                << " (mediana: " << m << ")\n";
       }
+    } else {
+      std::cerr << "Tipo de tornillo invalido: " << block.type << '\n';
+    }
     if (this->classified.empty()) {
       bool checkthreads = true;
       for (size_t i = 0; i < this->classificators.size(); i++) {
@@ -116,11 +119,4 @@ void ScrewPackager::get_remainder() {
 }
 
 ScrewPackager::~ScrewPackager() {
-  //TODO: hace falta sacar todos los elementos de la lista?
-  /*while (!this->classified.empty()) {
-    this->classified.pop();
-  }*/
-  for (size_t i = 0; i < this->classificators.size(); i++) {
-    this->classificators[i].join();
-  }
 }

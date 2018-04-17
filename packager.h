@@ -2,11 +2,12 @@
 #define SCREW_PACKAGER_H
 
 #include <stdio.h>
-#include <string.h>
 #include <sstream>
 #include <fstream>
 #include <iostream>
 #include <queue>
+#include <map>
+#include <string>
 #include <vector>
 #include <utility>
 #include <mutex>
@@ -21,20 +22,16 @@ private:
   std::queue<ScrewBlock> q;
   std::mutex m;
   std::condition_variable cv;
+
 public:
-  ScrewsQueue () {}
-  virtual ~ScrewsQueue () {}
+  ScrewsQueue() {}
+  virtual ~ScrewsQueue() {}
   ScrewBlock pop() {
     std::unique_lock<std::mutex> l(m);
     while (q.empty())
       cv.wait(l);
     ScrewBlock b = this->q.front();
     this->q.pop();
-    return b;
-  }
-  ScrewBlock front() {
-    std::unique_lock<std::mutex> l(m);
-    ScrewBlock b = this->q.front();
     return b;
   }
   void push(ScrewBlock const block) {
@@ -55,8 +52,8 @@ class Thread {
   std::thread thread;
 
   public:
-  Thread () {}
-  virtual ~Thread () {}
+  Thread() {}
+  virtual ~Thread() {}
   void start() {
     this->thread = std::thread(&Thread::run, this);
   }
@@ -64,10 +61,8 @@ class Thread {
     this->thread.join();
   }
   virtual void run() = 0;
-  //deberia hacer la copia por movimiento?
   Thread(const Thread&) = delete;
   Thread& operator=(const Thread&) = delete;
-
   Thread(Thread&& other) {
     this->thread = std::move(other.thread);
   }
@@ -83,9 +78,11 @@ class ScrewClassifier : public Thread {
   std::string name;
   ScrewsQueue *classified;
   bool finished = false;
+
  public:
-  ScrewClassifier (const char* filename, ScrewsQueue *classified);
-  ScrewClassifier(ScrewClassifier &&other) : infile(std::move(other.infile)), name(other.name), classified(other.classified) {}
+  ScrewClassifier(const char* filename, ScrewsQueue *classified);
+  ScrewClassifier(ScrewClassifier &&other) : infile(std::move(other.infile)),
+    name(other.name), classified(other.classified), finished(other.finished) {}
   void run();
   ~ScrewClassifier();
   bool is_finished();
@@ -95,11 +92,12 @@ class ScrewsUnpackaged {
  private:
   int total = 0;
   std::vector<int> widths;
-  int limit = 0;
-  int type;
+  const int type;
+  const unsigned int limit;
+
  public:
-  ScrewsUnpackaged (int type, int limit) : type(type), limit(limit) {}
-  virtual ~ScrewsUnpackaged () {
+  ScrewsUnpackaged(int type, int limit) : type(type), limit(limit) {}
+  virtual ~ScrewsUnpackaged() {
     this->widths.clear();
   }
   int get_type() {
@@ -108,7 +106,7 @@ class ScrewsUnpackaged {
   int get_size() {
     return this->widths.size();
   }
-  int make_package(int quantity, int width, int limit, std::string btype) {
+  int make_package(int quantity, int width, unsigned int limit, std::string btype) {
     this->widths.push_back(width);
     if (this->widths.size() == limit) {
       int m = this->get_median(limit);
@@ -116,24 +114,6 @@ class ScrewsUnpackaged {
       return m;
     }
     return -1;
-
-    //int left = quantity;
-    //int packages = 0;
-    //for (size_t i = 0; i < quantity; i++) {
-    /*  this->widths.push_back(width);
-      if (this->widths.size() == limit) {
-        int m = this->get_median(limit);
-        //std::mutex mscreen.lock();
-        std::stringstream s;
-        s << "Paquete listo: " << limit << " tornillos de tipo "
-                  << btype << " (mediana: " << m << ")\n";
-        this->pout->print(&s);
-        //mscreen.unlock();
-        //++packages;
-        this->widths.clear();
-      }
-    //}
-    //return packages;*/
   }
   int get_median(int limit) {
     std::sort(this->widths.begin(),this->widths.end());
@@ -151,11 +131,13 @@ class ScrewPackager {
   std::vector<ScrewClassifier> classificators;
   int total = 0;
   std::map<int, ScrewsUnpackaged> screws_unpackaged;
+
  public:
-  ScrewPackager (const char * cfg_file) : config(cfg_file){};
-  virtual ~ScrewPackager ();
+  explicit ScrewPackager(const char * cfg_file) : config(cfg_file) {}
+  virtual ~ScrewPackager();
   void connect_to_classificators(const int total, const char *file_classif[]);
   void start();
+
  private:
   void make_packages();
   void get_remainder();

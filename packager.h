@@ -130,7 +130,7 @@ class ScrewPackager {
  private:
   ScrewConfiguration config;
   ScrewsQueue classified;
-  std::vector<ScrewClassifier> classificators;
+  std::vector<ScrewClassifier*> classificators;
   int total = 0;
   std::map<int, ScrewsUnpackaged> screws_unpackaged;
 

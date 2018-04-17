@@ -21,7 +21,9 @@ class ScrewsQueue {
 private:
   std::queue<ScrewBlock> q;
   std::mutex m;
-  std::condition_variable cv;
+  size_t size = 100;
+  std::condition_variable cv_full;
+  std::condition_variable cv_empty;
 
 public:
   ScrewsQueue() {}
@@ -29,17 +31,19 @@ public:
   ScrewBlock pop() {
     std::unique_lock<std::mutex> l(m);
     while (q.empty())
-      cv.wait(l);
+      cv_empty.wait(l);
     ScrewBlock b = this->q.front();
     this->q.pop();
+    cv_full.notify_all();
     return b;
   }
   void push(ScrewBlock const block) {
-    std::lock_guard<std::mutex> l(m);
-    bool wake = q.empty();
+    std::unique_lock<std::mutex> l(m);
+    if (q.empty())
+      cv_empty.notify_all();
+    while (this->q.size() >= this->size)
+      cv_full.wait(l);
     this->q.push(block);
-    if (wake)
-      cv.notify_one();
   }
   bool empty() {
     std::unique_lock<std::mutex> l(m);
@@ -106,7 +110,8 @@ class ScrewsUnpackaged {
   int get_size() {
     return this->widths.size();
   }
-  int make_package(int quantity, int width, unsigned int limit, std::string btype) {
+  int make_package(int quantity, int width, unsigned int limit,
+                    std::string btype) {
     this->widths.push_back(width);
     if (this->widths.size() == limit) {
       int m = this->get_median(limit);

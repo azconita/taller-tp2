@@ -49,20 +49,19 @@ void ScrewPackager::connect_to_classificators(const int total,
                                               const char *file_classif[]) {
   this->total = total;
   for (int i = 0; i < total; i++) {
-    ScrewClassifier *c = new ScrewClassifier(file_classif[i],
-                                            &(this->classified));
-    this->classificators.push_back(c);
+    this->classificators.push_back(ScrewClassifier(file_classif[i],
+              &(this->classified)));
   }
 }
 
 void ScrewPackager::start() {
   //TODO: ver si sirve un for_each acá
   for (int i = 0; i < this->total; i++) {
-    this->classificators[i]->start();
+    this->classificators[i].start();
   }
   this->make_packages();
   for (size_t i = 0; i < this->classificators.size(); i++) {
-    this->classificators[i]->join();
+    this->classificators[i].join();
   }
   this->get_remainder();
 }
@@ -94,7 +93,7 @@ void ScrewPackager::make_packages() {
     if (this->classified.empty()) {
       bool checkthreads = true;
       for (size_t i = 0; i < this->classificators.size(); i++) {
-        if (this->classificators[i]->is_finished() == false)
+        if (this->classificators[i].is_finished() == false)
           checkthreads = false;
       }
       finish = checkthreads;
